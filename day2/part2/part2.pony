@@ -6,13 +6,12 @@ actor Main
   new create(env: Env) =>
     let input = File.open(FilePath.create(FileAuth.create(env.root), "inputs/day2.txt"))  
     let lines = FileLines.create(input)
-    let rps: Rps val = Rps
 
     var total: U32 = 0
-    for goal in rps.parse_as_goals(lines) do
+    for goal in Rps.parse_as_goals(lines) do
       let opponent = goal._1
       let self = hand_for_goal(opponent, goal._2)
-      total = total + rps.score(opponent, self)
+      total = total + Rps.score(opponent, self)
     end
 
     env.out.print(total.string())

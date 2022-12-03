@@ -13,7 +13,7 @@ primitive Draw
 
 type Result is (Win | Lose | Draw)
 
-class Rps
+primitive Rps
   fun result(opponent: Hand, self: Hand): Result =>
     match (opponent, self)
     | (Rock, Paper) => Win
