@@ -1,10 +1,10 @@
 use "files"
 use ".."
+use "../../lib"
 
 actor Main
   new create(env: Env) =>
-      let input = File.open(FilePath.create(FileAuth.create(env.root), "inputs/day1.txt"))  
-      let lines = FileLines.create(input)
+      let lines = Input.lines(1, env)
       var maxs: Array[U64] = [0; 0; 0]
       for running in Summing(lines) do
         maxs = add_if_gt(maxs, running)

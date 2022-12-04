@@ -1,11 +1,11 @@
 use ".."
 use "files"
 use "collections"
+use "../../lib"
 
 actor Main
   new create(env: Env) =>
-    let input = File.open(FilePath.create(FileAuth.create(env.root), "inputs/day2.txt"))  
-    let lines = FileLines.create(input)
+    let lines = Input.lines(2, env)
 
     var total: U32 = 0
     for move in Rps.parse_as_moves(lines) do

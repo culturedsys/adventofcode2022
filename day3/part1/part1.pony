@@ -1,12 +1,12 @@
 use "files"
 use "collections"
 use ".."
+use "../../lib"
 
 actor Main
   new create(env: Env) =>
     try
-      let input = File.open(FilePath.create(FileAuth.create(env.root), "inputs/day3.txt"))  
-      let lines = FileLines(input)
+      let lines = Input.lines(3, env)
       var total: U64 = 0
       for line in lines do
         let first = Set[U8]
