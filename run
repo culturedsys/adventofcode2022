@@ -4,4 +4,4 @@ PARTS=(${1//// })
 DAY=${PARTS[0]}
 PART=${PARTS[1]}
 
-ponyc -o bin/$DAY $DAY/$PART && bin/$DAY/$PART
+ponyc --debug -o bin/$DAY $DAY/$PART && bin/$DAY/$PART
