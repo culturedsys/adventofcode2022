@@ -1,16 +1,39 @@
 use "itertools"
+use "collections"
+
+
+class Box[T]
+  var _value: T
+
+  new create(value: T^) =>
+    _value = value
+
+  fun ref set(value: T^): T =>
+    _value = value
+
+  fun get(): this->T =>
+    _value
+
+
+interface Walker
+  fun ref apply(d: Directory box)
+
 
 class Directory
   let _name: String
   let _directories: Array[Directory]
   let _files: Array[File]
+  var size: U32
 
   new create(name: String, directories: Array[Directory], files: Array[File]) =>
     _name = name
     _directories = directories
     _files = files
+    size = 0
+    _calculate_sizes()
 
   new parse(lines_base: Iterator[String])? =>
+    size = 0
     _name = "/"
     _directories = Array[Directory].create(0)
     _files = Array[File].create(0)
@@ -32,7 +55,8 @@ class Directory
         dir_stack.push(current_dir)
         current_dir = subdir
       end
-    end    
+    end 
+    _calculate_sizes()
 
   fun _parse_ls(lines: BufIterator[String], dir: Directory)? =>
     for line in lines do 
@@ -46,30 +70,41 @@ class Directory
       end
     end
 
-  fun find_size_at_most(size: U32): U32 =>
-    _traverse(size)._2
-
-  fun _traverse(size: U32): (U32, U32) =>
-    var total: U32 = 0
-    
-    for file in _files.values() do
-      total = total + file.size    
+  fun walk(f: Walker) =>
+    f(this)
+    for subdir in _directories.values() do
+      subdir.walk(f)
     end
 
-    var matching_subdirs_size: U32 = 0
+  fun find_size_at_most(maximum: U32): U32 =>
+    let total = Box[U32](0)
+    walk({ (subdir) => 
+      if subdir.size <= maximum then
+        total.set(total.get() + subdir.size)
+      end    
+    })
+    total.get()
+
+  fun find_smallest_at_least(minimum: U32): U32 =>
+    let ret = Box[U32](U32.max_value())
+    walk( {(subdir) =>
+      if (subdir.size > minimum) and (subdir.size < ret.get()) then
+        ret.set(subdir.size)  
+      end
+    })
+    ret.get()
+  
+  fun ref _calculate_sizes() =>
+    if size != 0 then return end
+    for file in _files.values() do
+      size = size + file.size    
+    end
 
     for subdir in _directories.values() do
-      let from_subdir = subdir._traverse(size)
-      let size_subdir = from_subdir._1
-      total = total + size_subdir
-      matching_subdirs_size = matching_subdirs_size + from_subdir._2
-      if size_subdir <= size then
-        matching_subdirs_size = matching_subdirs_size + size_subdir
-      end
+      subdir._calculate_sizes()
+      size = size + subdir.size
     end
-
-    (total, matching_subdirs_size)
-
+    
 
 class File
   let name: String
