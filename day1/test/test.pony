@@ -1,4 +1,5 @@
 use "pony_test"
+use "collections"
 use ".."
 
 actor Main is TestList
