@@ -1,37 +1,37 @@
 use "collections"
 use "../../lib"
+use ".."
+
+
+class Vdu is SignalNotifier
+  var _col: U8
+  let _out: OutStream
+
+  new create(out': OutStream) =>
+    _out = out'
+    _col = 0
+
+  fun ref signal(x: I32) =>
+    if (_col.i32() >= (x - 1)) and (_col.i32() <= (x + 1)) then
+      _out.write("#")
+    else
+      _out.write(".")
+    end
+    _col = (_col + 1) % 40
+    if _col == 0 then
+      _out.print("")  
+    end
+
 
 actor Main
   new create(env: Env) =>
-    try
+    let ops: Array[Op] val = try
       let lines = Input.lines(10, env)
-
-      let signal: Array[I32] = []
-      var x: I32 = 1
-      for line in lines do
-        let parts = line.split()
-        match parts(0)?
-        | "noop" => signal.push(x)
-        | "addx" =>
-            signal.push(x)
-            signal.push(x)
-            x = x + parts(1)?.i32()?
-        end
-      end
-
-      for row in Range(0, 6) do
-        for col in Range(0, 40) do
-          let value = signal((row * 40) + col)?
-          if (col.i32() >= (value - 1)) and (col.i32() <= (value + 1)) then  
-            env.out.write("▓")
-          else
-            env.out.write("░")
-          end
-        end
-        env.out.print("")
-      end
-
-
+      Assembler.assemble(lines)?
     else
       env.err.print("Parse error")
+      return
     end
+
+    let cpu = Cpu(ops, Vdu(env.out))
+    cpu.run()

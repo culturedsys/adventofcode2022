@@ -1,30 +1,37 @@
 use "../../lib"
+use ".."
+
+
+class SignalSampler is SignalNotifier
+  var _total: I32
+  var _cycle: U32
+  let _samples: Array[U32] val
+
+  new create(samples': Array[U32] val) =>
+    _samples = samples'
+    _total = 0
+    _cycle = 1
+
+  fun ref signal(x: I32) =>
+    if _samples.contains(_cycle) then
+      _total = _total + (x * _cycle.i32())  
+    end
+    _cycle = _cycle + 1
+
+  fun total(): I32 => _total
+
 
 actor Main
   new create(env: Env) =>
-    try
+    let ops: Array[Op] val = try
       let lines = Input.lines(10, env)
-
-      let signal: Array[I32] = []
-      var x: I32 = 1
-      for line in lines do
-        let parts = line.split()
-        match parts(0)?
-        | "noop" => signal.push(x)
-        | "addx" =>
-            signal.push(x)
-            signal.push(x)
-            x = x + parts(1)?.i32()?
-        end
-      end
-
-      env.out.print(((signal(19)? * 20) + 
-        (signal(59)? * 60) + 
-        (signal(99)? * 100) + 
-        (signal(139)? * 140) + 
-        (signal(179)? * 180) + 
-        (signal(219)? * 220)).string())
-
+      Assembler.assemble(lines)?
     else
       env.err.print("Parse error")
+      return
     end
+
+    let sampler = SignalSampler([20; 60; 100; 140; 180; 220])
+    let cpu = Cpu(ops, sampler)
+    cpu.run()
+    env.out.print(sampler.total().string())
