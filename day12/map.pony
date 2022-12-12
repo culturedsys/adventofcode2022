@@ -1,5 +1,4 @@
 use "collections"
-use "debug"
 use "format"
 
 
@@ -80,10 +79,14 @@ class Node
 class Nodes
   let _map: Map[Point, Node]
   let _unvisited: Unvisited
+  let _start: Node
+  let _finish: Node
 
-  new parse(lines: Iterator[String]) =>
+  new parse(lines: Iterator[String])? =>
     _unvisited = Unvisited
     _map = Map[Point, Node]
+    var start: (Node | None) = None
+    var finish: (Node | None) = None
     var y: USize = 0
     for line in lines do
       var x: USize = 0
@@ -95,46 +98,62 @@ class Nodes
         end
         _map(Point(x, y)) = node
         _unvisited.add(node)
+        if node.is_start() then start = node end
+        if node.is_finish() then finish = node end
         x = x + 1
       end
       y = y + 1
     end
+    match (start, finish)
+    | (let s: Node, let f: Node) => 
+      _start = s
+      _finish = f
+    else
+      error
+    end
 
   fun ref find_shortest(): U32? =>
+    _find_distances(true)?
+    _finish.distance()
+
+  fun ref _find_distances(ascending: Bool)? =>
     var current = _unvisited.pop()?
     while true do
-      // Debug.err("Current: " + current.location().string())
       for neighbour_coord in current.neighbours() do
         let neighbour = try
             _map(neighbour_coord)?
           else
             continue
           end
-        // Debug.err(neighbour.location().string() + ": " + current.height().string() + " ^ " + neighbour.height().string())
-        if neighbour.height() > (current.height() + 1) then
+        if (ascending and (neighbour.height() > (current.height() + 1))) or 
+          ((not ascending) and (neighbour.height() < (current.height() - 1))) then
           continue  
         end
         let via_current = current.distance() + 1
         if neighbour.distance() > via_current then
-          // Debug.err(current.location().string() + " -> " + neighbour.location().string() + " changed " + neighbour.distance().string() + " to " + via_current.string())
           neighbour.set_distance(via_current)
           _unvisited.update(neighbour)  
         end
       end
-      current = _unvisited.pop()?
-      if current.is_finish() then
-        // for y in Range(0, 5) do
-        //   var line = ""
-        //   for x in Range(0, 8) do
-        //     line = line + Format.int[U32](_map(Point(x, y))?.distance() where width=11)
-        //   end
-        //   Debug.err(line)
-        // end
-        return current.distance()
+      try
+        current = _unvisited.pop()?
+      else
+        break
       end
     end
 
-    error
+    fun ref find_shortest_of_many(): U32? =>
+      _start.set_distance(U32.max_value())
+      _finish.set_distance(0)
+      _find_distances(false)?
+      var min = U32.max_value()
+      for node in _map.values() do
+        if (node.height() == 0) and (node.distance() < min) then
+          min = node.distance()
+        end
+      end
+
+      min
 
 
 class Unvisited

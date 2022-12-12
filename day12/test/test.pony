@@ -6,8 +6,9 @@ actor Main is TestList
     PonyTest(env, this)
 
   fun tag tests(test: PonyTest) =>
-    test(_TestUnvisited)
+    // test(_TestUnvisited)
     test(_TestFindShortest)
+    test(_TestFindMultiple)
 
 
 class _TestUnvisited is UnitTest
@@ -41,17 +42,44 @@ class _TestFindShortest is UnitTest
   fun name(): String => "TestFindShortest"
 
   fun apply(h: TestHelper) =>
-    let nodes = 
+    let nodes = try
       Nodes.parse([
         "Sabqponm"
         "abcryxxl"
         "accszExk"
         "acctuvwj"  
         "abdefghi"
-      ].values())
+      ].values())?
+    else
+      h.fail("Parse error")
+      return
+    end
 
     try
       h.assert_eq[U32](31, nodes.find_shortest()?)
+    else
+      h.fail("Unknown error")
+    end
+
+class _TestFindMultiple is UnitTest
+  fun name(): String => "TestFindMultiple"
+
+  fun apply(h: TestHelper) =>
+    let nodes = try
+      Nodes.parse([
+        "Sabqponm"
+        "abcryxxl"
+        "accszExk"
+        "acctuvwj"  
+        "abdefghi"
+      ].values())?
+    else
+      h.fail("Parse error")
+      return
+    end
+
+    try
+      h.assert_eq[U32](29, nodes.find_shortest_of_many()?)
     else
       h.fail("Unknown error")
     end
