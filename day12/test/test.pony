@@ -6,36 +6,8 @@ actor Main is TestList
     PonyTest(env, this)
 
   fun tag tests(test: PonyTest) =>
-    // test(_TestUnvisited)
     test(_TestFindShortest)
     test(_TestFindMultiple)
-
-
-class _TestUnvisited is UnitTest
-  fun name(): String => "TestPriorityQueue"
-
-  fun apply(h: TestHelper) =>
-    try
-      let q = Unvisited
-      var n = Node(Point(0, 0), 1)
-      n.set_distance(2)
-      q.add(n)
-      
-      n = Node(Point(1, 1), 2)
-      n.set_distance(1)
-      q.add(n)
-
-      n = Node(Point(2, 2), 3)
-      n.set_distance(3)
-      q.add(n)
-      
-      let top = q.pop()?
-
-      h.assert_eq[USize](2, q.size())
-      h.assert_eq[U32](1, top.distance())
-    else
-      h.fail("Out of bounds")
-    end
 
 
 class _TestFindShortest is UnitTest
@@ -56,7 +28,7 @@ class _TestFindShortest is UnitTest
     end
 
     try
-      h.assert_eq[U32](31, nodes.find_shortest()?)
+      h.assert_eq[U32](31, nodes.find_shortest_to_finish()?)
     else
       h.fail("Unknown error")
     end
@@ -79,7 +51,7 @@ class _TestFindMultiple is UnitTest
     end
 
     try
-      h.assert_eq[U32](29, nodes.find_shortest_of_many()?)
+      h.assert_eq[U32](29, nodes.find_shortest_to_lowest()?)
     else
       h.fail("Unknown error")
     end

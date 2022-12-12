@@ -10,7 +10,7 @@ actor Main
       return
     end
     try
-      env.out.print(nodes.find_shortest_of_many()?.string())
+      env.out.print(nodes.find_shortest_to_lowest()?.string())
     else
       env.err.print("Bad input")
     end

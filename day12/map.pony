@@ -20,41 +20,17 @@ class val Point is (Hashable & Equatable[Point] & Stringable)
     "(" + x.string() + ", " + y.string() + ")"
 
 
-primitive Start
-primitive Finish
-primitive Other
-
-type NodeType is (Start | Finish | Other)
-
 class Node
-  let _type: NodeType
   let _location: Point
   let _height: U8
   var _distance: U32
+  var _seen: Bool
 
   new create(location': Point, height': U8) =>
-    _type = Other
     _location = location'
     _height = height'
-    _distance = U32.max_value()
-
-  new start(location': Point) =>
-    _type = Start
-    _location = location'
-    _height = 0
     _distance = 0
-
-  new finish(location': Point) =>
-    _type = Finish
-    _location = location'
-    _height = 'z' - 'a'
-    _distance = U32.max_value()
-
-  fun box is_start(): Bool =>
-    _type is Start
-
-  fun box is_finish(): Bool =>
-    _type is Finish
+    _seen = false
 
   fun ref set_distance(distance': U32) =>
     _distance = distance'
@@ -68,6 +44,12 @@ class Node
   fun location(): Point =>
     _location
 
+  fun ref set_seen() =>
+    _seen = true
+
+  fun seen(): Bool =>
+    _seen
+
   fun neighbours(): Iterator[Point] =>
     [
       Point(_location.x - 1, _location.y)
@@ -78,12 +60,10 @@ class Node
 
 class Nodes
   let _map: Map[Point, Node]
-  let _unvisited: Unvisited
   let _start: Node
   let _finish: Node
 
   new parse(lines: Iterator[String])? =>
-    _unvisited = Unvisited
     _map = Map[Point, Node]
     var start: (Node | None) = None
     var finish: (Node | None) = None
@@ -92,18 +72,23 @@ class Nodes
       var x: USize = 0
       for cell in line.values() do
         let node = match cell
-        | 'S' => Node.start(Point(x, y))
-        | 'E' => Node.finish(Point(x, y))
+        | 'S' => 
+          let s = Node(Point(x, y), 0)
+          start = s
+          s
+        | 'E' => 
+          let f = Node(Point(x, y), 'z' - 'a')
+          finish = f
+          f
         else Node(Point(x, y), cell - 'a')
         end
+
         _map(Point(x, y)) = node
-        _unvisited.add(node)
-        if node.is_start() then start = node end
-        if node.is_finish() then finish = node end
         x = x + 1
       end
       y = y + 1
     end
+
     match (start, finish)
     | (let s: Node, let f: Node) => 
       _start = s
@@ -112,13 +97,20 @@ class Nodes
       error
     end
 
-  fun ref find_shortest(): U32? =>
-    _find_distances(true)?
-    _finish.distance()
+  fun ref find_shortest_to_finish(): U32? =>
+    _find_distances(true, _start, { (n) => n is _finish })?
 
-  fun ref _find_distances(ascending: Bool)? =>
-    var current = _unvisited.pop()?
+
+  fun ref find_shortest_to_lowest(): U32? =>
+    _find_distances(false, _finish, { (n) => n.height() == 0 })?
+
+  fun ref _find_distances(ascending: Bool, start: Node, condition: Condition): U32? =>
+    var current = start
+    let queue = List[Node]
     while true do
+      if condition(current) then
+        return current.distance()  
+      end
       for neighbour_coord in current.neighbours() do
         let neighbour = try
             _map(neighbour_coord)?
@@ -129,60 +121,22 @@ class Nodes
           ((not ascending) and (neighbour.height() < (current.height() - 1))) then
           continue  
         end
-        let via_current = current.distance() + 1
-        if neighbour.distance() > via_current then
-          neighbour.set_distance(via_current)
-          _unvisited.update(neighbour)  
+        neighbour.set_distance(current.distance() + 1)
+        if not neighbour.seen() then
+          neighbour.set_seen()
+          queue.push(neighbour)
         end
       end
       try
-        current = _unvisited.pop()?
+        current = queue.shift()?
       else
         break
       end
     end
-
-    fun ref find_shortest_of_many(): U32? =>
-      _start.set_distance(U32.max_value())
-      _finish.set_distance(0)
-      _find_distances(false)?
-      var min = U32.max_value()
-      for node in _map.values() do
-        if (node.height() == 0) and (node.distance() < min) then
-          min = node.distance()
-        end
-      end
-
-      min
+    
+    error
 
 
-class Unvisited
-  let _nodes: List[Node]
-
-  new create() =>
-    _nodes = List[Node]
-
-  fun size(): USize =>
-    _nodes.size()
-
-  fun ref add(node: Node) =>
-    _nodes.push(node)
-
-  fun ref pop(): Node? =>
-    let i = _nodes.nodes() 
-    var min = i.next()?
-
-    for n in i do
-      if n()?.distance() < min()?.distance() then
-        min = n  
-      end
-    end
-
-    let ret = min()?
-    min.remove()
-    ret
-
-  fun ref update(node: Node) =>
-    // No-op; would do something if we were using an actual priority queue
-    None
-
+interface Condition
+  fun apply(node: Node): Bool
+ 
