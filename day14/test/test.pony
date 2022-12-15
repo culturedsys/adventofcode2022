@@ -12,6 +12,7 @@ actor Main is TestList
   fun tag tests(test: PonyTest) =>
     test(_TestBuildLines)
     test(_TestFill)
+    test(_TestFillFloor)
 
 
 class SSet is (Stringable & Equatable[SSet box])
@@ -53,4 +54,14 @@ class _TestFill is UnitTest
     let actual = Cave.from_lines([[Point(498,4); Point(498,6); Point(496,6)]
         [Point(503,4); Point(502,4); Point(502,9); Point(494,9)]].values())
 
-    h.assert_eq[U32](24, actual.fill(Point(500, 0)))
+    h.assert_eq[U32](24, actual.fill_to_abyss(Point(500, 0)))
+
+
+class _TestFillFloor is UnitTest
+  fun name(): String => "TestFillFloor"
+
+  fun apply(h: TestHelper) =>
+    let actual = Cave.from_lines([[Point(498,4); Point(498,6); Point(496,6)]
+        [Point(503,4); Point(502,4); Point(502,9); Point(494,9)]].values())
+
+    h.assert_eq[U32](93, actual.fill_to_floor(Point(500, 0)))
